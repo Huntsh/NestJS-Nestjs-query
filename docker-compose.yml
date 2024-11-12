@@ -1,10 +1,44 @@
-version: '3'
 services:
-  postgres:
-    image: 'postgres:9.6.1'
+  api:
+    container_name: trabalho_api
+    build:
+      context: .
+      target: development
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
     ports:
-      - '5432:5432'
+      - ${API_PORT}:${API_PORT}
+    env_file:
+      - .env
+    networks:
+      - docker-network
+    depends_on:
+      - postgres
+      - redis
+  redis:
+    container_name: pendura_redis
+    image: redis
+    ports:
+      - 6379:6379
+    command: redis-server --requirepass redis
+    networks:
+      - docker-network
+  postgres:
+    container_name: pendura_db
+    image: postgres:13-alpine
+    networks:
+      - docker-network
     environment:
-      POSTGRES_USER: 'test'
-      POSTGRES_PASSWORD: 'test'
-      POSTGRES_DB: 'test'
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_DB: ${DB_NAME}
+      PG_DATA: /var/lib/postgresql/data
+    ports:
+      - ${DB_HOST_PORT}:${DB_PORT}
+    volumes:
+      - api_db_data:/var/lib/postgresql/data
+networks: 
+  docker-network:
+volumes:
+  api_db_data:
